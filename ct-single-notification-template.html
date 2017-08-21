@@ -99,7 +99,7 @@ Element used for the editing of notification templates.
         </div>
         <div class="row">
           <div class="col-xs-12">
-            <span class="legend-text">legend/template tags</span>
+            <span class="legend-text"><template is="dom-repeat" items="{{_legendList.templatePlaceholders}}"><span>{{{{item}}}} </span></template></span>
           </div>
         </div>
       </div>
@@ -125,10 +125,16 @@ Element used for the editing of notification templates.
       is: 'ct-single-notification-template',
 
       properties: {
-        message: String,
+
+        message: {
+          Type: String
+        },
         model: String,
-        purpose: String,
+        purpose: {
+          type: String,
+        },
         type: String,
+        templatePlaceholders: Array,
         _isStateEdit : {
             type: Boolean,
             value: function() {
@@ -136,10 +142,20 @@ Element used for the editing of notification templates.
             }
         },
         value: String,
-        _legendList: Array,
+        legendList: Array
       },
+      observers: [
+       '_observePurposeAndType(purpose, type)'
+      ],
+      _observePurposeAndType: function(purpose, type) {
+        var typeId=0;
+        if(type === "email"){
+          typeId=1;
+        }
 
-
+        this._getTempalateByPurposeAndTypes(typeId,purpose);
+        this._getPurposeLegend(purpose);
+      },
     listeners: {
       'iron-form-presubmit':'_formHandler'
     },
@@ -160,19 +176,19 @@ Element used for the editing of notification templates.
     init : function(){
         this.refreshing = true;
         this._getTemplates();
-        this._getTemplateByPurpose();
-        this._getPurposeLegend();
+        // this._getTemplateByPurpose();
+        // this._getPurposeLegend(purpose);
     },
 
     _submitForm : function() {
       this.$.form.submit();
     },
     _computeBtnText: function(isEdit){
-          return (!isEdit) ? 'Save' : 'Edit';
+          return (isEdit) ? 'Save' : 'Edit';
     },
 
     _computeBtnStyle : function(isEdit){
-          return (!isEdit) ? "btn-primary" : "btn-default";
+          return (isEdit) ? "btn-primary" : "btn-default";
     },
     _toggleStatus : function(target){
        this._isStateEdit = !this._isStateEdit;
@@ -212,20 +228,30 @@ Element used for the editing of notification templates.
        .catch(this.fire.bind(this, 'toast', {message: 'Failed to load template types', type: 'danger'}))
        .finally(this.set.bind(this, 'refresh', false));
    },
+   _getTempalateByPurposeAndTypes: function(type, purpose) {
+     this.$.messageTemplateApi.getTempalateByPurposeAndTypes(type, purpose)
+     .then(function (request) {
+       this._purposePurposeAndTypeList = request.response;
+       console.log(this._purposePurposeAndTypeList);
+       }.bind(this))
+       .catch(this.fire.bind(this, 'toast', {message: 'Failed to load templates', type: 'danger'}))
+       .finally(this.set.bind(this, 'refresh', false));
+   },
 
-   _getPurposeLegend: function () {
-     this.$.messageTemplateApi.getPurposeLegend(this.purposeId)
-     //.then(this._setPropertyResponse.bind(this, '_messageLegend'))
+   _getPurposeLegend: function (purposeId) {
+     this.$.messageTemplateApi.getPurposeLegend(purposeId)
+    // .then(this._setPropertyResponse.bind(this, '_messageLegend'))
      .then(function (request) {
        this._legendList = request.response;
        console.log(this._legendList);
+       console.log(this._legendList.templatePlaceholders)
      }.bind(this))
      .catch(this.fire.bind(this, 'toast', {message: 'Failed to load template legend', type: 'danger'}))
      .finally(this.set.bind(this, 'refreshing', false));
    },
 
-    _updateTemplate : function () {
-        this.$.messageTemplateApi.updateTemplate()
+    _updateTemplate : function (updateTemplate) {
+        this.$.messageTemplateApi.updateTemplate(updateTemplate)
         .then(this.fire.bind(this, 'toast', {message: 'Successfully updated Template', type: 'success'}))
               .catch(this.fire.bind(this, 'toast', {message: 'Error updating Template.', type: 'danger'}))
               .finally(function(){
