@@ -130,6 +130,7 @@ Element used for the editing of notification templates.
           Type: String
         },
         model: String,
+        templateText: String,
         purpose: {
           type: String,
         },
@@ -176,8 +177,6 @@ Element used for the editing of notification templates.
     init : function(){
         this.refreshing = true;
         this._getTemplates();
-        // this._getTemplateByPurpose();
-        // this._getPurposeLegend(purpose);
     },
 
     _submitForm : function() {
@@ -196,11 +195,18 @@ Element used for the editing of notification templates.
 
    _editBtnHandler : function(e){
      var input = this.$$('#input');
-     var value = input.value;
+     var templatePurpose = this.purpose;
+     var templateType = this.type;
+     var templateText = input.value;
+
+     var typeId=0;
+     if(templateType === "email"){
+       typeId=1;
+     }
 
      if(this._isStateEdit) {
-       this.value = value;
-       this.fire('_updateTemplate', {"value": this.value});
+       this.templateText = templateText;
+       this.fire('ct-save-setting-item-tapped', {"templatePurpose": this.purpose, "templateType": typeId,"templateText" : this.templateText});
        this._toggleStatus();
      }
      else {
